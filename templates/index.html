@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Road Maintenance Optimizer - Genetic Algorithm</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=5) }}">
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1>🛣️ Road Maintenance Optimizer</h1>
+    <p>Genetic Algorithm untuk Optimasi Pemeliharaan Jalan</p>
+  </div>
+
+  <div class="tabs">
+    <button type="button" class="tab-button active" onclick="showTab('input')">📝 Input Data</button>
+    <button type="button" class="tab-button" onclick="showTab('parameters')">⚙️ Parameter GA</button>
+    {% if result %}
+    <button type="button" class="tab-button" onclick="showTab('results')">📊 Hasil Analisis</button>
+    {% endif %}
+  </div>
+
+  <form id="ga-form" method="post" action="/run">
+    
+    <!-- TAB 1: INPUT DATA -->
+    <div id="tab-input" class="tab-content active">
+      
+      <!-- PILIH MODE INPUT -->
+      <div class="card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <h2 style="color: white; font-weight: 700; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">📝 Pilih Cara Input Data</h2>
+        <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-top: 15px;">
+          <button type="button" onclick="showInputMode('form')" class="mode-btn active" id="btn-form">
+            📋 Form Input (Mudah)
+          </button>
+          <button type="button" onclick="showInputMode('csv')" class="mode-btn" id="btn-csv">
+            📄 CSV Manual (Advanced)
+          </button>
+        </div>
+      </div>
+
+      <!-- MODE 1: FORM INPUT -->
+      <div id="input-form-mode">
+        <div class="card">
+          <h2>🚧 Data Kerusakan Jalan (Distress)</h2>
+          <div class="info-box">
+            <p><strong>Isi data kerusakan jalan di bawah ini:</strong></p>
+            <p>• <strong>ID:</strong> Kode kerusakan (contoh: D1, D2)</p>
+            <p>• <strong>Lokasi (m):</strong> Jarak dari awal jalan dalam meter</p>
+            <p>• <strong>Deduction:</strong> Tingkat kerusakan (1-100, makin besar makin parah)</p>
+            <p>• <strong>Biaya Lokal:</strong> Biaya tambal titik ini (dalam USD)</p>
+          </div>
+          
+          <div id="distress-inputs">
+            <div class="input-row">
+              <input type="text" placeholder="ID (D1)" class="d-id">
+              <input type="number" placeholder="Lokasi (meter)" class="d-loc">
+              <input type="number" placeholder="Deduction" class="d-ded">
+              <input type="number" placeholder="Biaya Lokal" class="d-cost">
+              <button type="button" onclick="removeRow(this)" class="btn-remove">✕</button>
+            </div>
+          </div>
+          <button type="button" onclick="addDistressRow()" class="btn-add">+ Tambah Kerusakan</button>
+        </div>
+
+        <div class="card">
+          <h2>🔧 Opsi Resurfacing</h2>
+          <div class="info-box">
+            <p><strong>Isi segmen jalan yang bisa di-resurfacing:</strong></p>
+            <p>• <strong>ID:</strong> Kode segmen (contoh: S1, S2)</p>
+            <p>• <strong>Start (m):</strong> Meter awal segmen</p>
+            <p>• <strong>End (m):</strong> Meter akhir segmen</p>
+            <p>• <strong>Biaya Resurfacing:</strong> Biaya ganti permukaan segmen (dalam USD)</p>
+          </div>
+          
+          <div id="segment-inputs">
+            <div class="input-row">
+              <input type="text" placeholder="ID (S1)" class="s-id">
+              <input type="number" placeholder="Start (m)" class="s-start">
+              <input type="number" placeholder="End (m)" class="s-end">
+              <input type="number" placeholder="Biaya Resurfacing" class="s-cost">
+              <button type="button" onclick="removeRow(this)" class="btn-remove">✕</button>
+            </div>
+          </div>
+          <button type="button" onclick="addSegmentRow()" class="btn-add">+ Tambah Segmen</button>
+        </div>
+      </div>
+
+      <!-- MODE 2: CSV INPUT (HIDDEN BY DEFAULT) -->
+      <div id="input-csv-mode" style="display: none;">
+        <div class="card">
+          <h2>🚧 Data Kerusakan Jalan (Distress)</h2>
+          <div class="info-box">
+            <p><strong>Format CSV:</strong> <code>id,location_m,deduction,cost_local</code></p>
+          </div>
+          <textarea name="distress_csv_text" form="ga-form" placeholder="Paste data CSV di sini...">{{ sample_distress }}</textarea>
+        </div>
+
+        <div class="card">
+          <h2>🔧 Opsi Resurfacing</h2>
+          <div class="info-box">
+            <p><strong>Format CSV:</strong> <code>id,start_m,end_m,cost_resurfacing</code></p>
+          </div>
+          <textarea name="segment_csv_text" form="ga-form" placeholder="Paste data CSV di sini...">{{ sample_segment }}</textarea>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- TAB 2: PARAMETERS -->
+    <div id="tab-parameters" class="tab-content">
+      <div class="card">
+        <h2>💰 Budget & Parameter Algoritma</h2>
+        
+        <div class="form-grid">
+          <div class="form-group">
+            <label>💵 Total Budget (USD)
+              <span class="label-hint">Anggaran maksimal tersedia</span>
+            </label>
+            <input type="number" name="budget" value="{{ params.budget if params else '150000' }}" min="1000" step="100" required>
+          </div>
+
+          <div class="form-group">
+            <label>👥 Ukuran Populasi
+              <span class="label-hint">Jumlah solusi per generasi (30-100)</span>
+            </label>
+            <input type="number" name="pop_size" value="{{ params.pop_size if params else '50' }}" min="10" max="200" required>
+          </div>
+
+          <div class="form-group">
+            <label>🔄 Jumlah Generasi
+              <span class="label-hint">Iterasi maksimal (50-200)</span>
+            </label>
+            <input type="number" name="generations" value="{{ params.generations if params else '120' }}" min="10" max="500" required>
+          </div>
+
+          <div class="form-group">
+            <label>🧬 Crossover Rate
+              <span class="label-hint">Probabilitas kawin silang (0.6-0.9)</span>
+            </label>
+            <input type="text" name="crossover_rate" value="{{ params.crossover_rate if params else '0.8' }}" required>
+          </div>
+
+          <div class="form-group">
+            <label>🎲 Mutation Rate
+              <span class="label-hint">Probabilitas mutasi (0.01-0.1)</span>
+            </label>
+            <input type="text" name="mutation_rate" value="{{ params.mutation_rate if params else '0.05' }}" required>
+          </div>
+
+          <div class="form-group">
+            <label>⚠️ Penalti Budget (λ)
+              <span class="label-hint">Hukuman per dollar jika over budget</span>
+            </label>
+            <input type="number" name="lambda_budget" value="{{ params.lambda_budget if params else '0.5' }}" step="0.1" min="0" required>
+            <div style="font-size: 0.85em; color: #666; margin-top: 5px;">
+              💡 <strong>Tips:</strong> Nilai 0.5-1 = toleran over budget sedikit | 2-5 = ketat budget | 10+ = sangat ketat
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>🚫 Penalti Overlap (λ)
+              <span class="label-hint">Penalti untuk segmen bertumpukan</span>
+            </label>
+            <input type="number" name="lambda_overlap" value="{{ params.lambda_overlap if params else '1000' }}" step="100" min="0" required>
+            <div style="font-size: 0.85em; color: #666; margin-top: 5px;">
+              💡 <strong>Tips:</strong> Nilai 1000+ = overlap WAJIB dihindari | 100-500 = boleh overlap sedikit | <100 = bebas overlap
+            </div>
+          </div>
+        </div>
+
+        <input type="hidden" name="distress_csv" value="">
+        <input type="hidden" name="segment_csv" value="">
+
+        <div id="client-error" class="alert-error" style="display:none; margin-top: 10px;">
+          <p class="msg" style="margin:0;">Isi minimal 1 baris kerusakan dan 1 baris segmen sebelum menjalankan analisis.</p>
+        </div>
+
+        <div class="submit-container">
+          <button type="submit">🚀 Jalankan Optimasi GA</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: RESULTS -->
+    {% if result %}
+    <div id="tab-results" class="tab-content">
+      <div class="card">
+        <h2>📊 Ringkasan Hasil Optimasi</h2>
+        
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">💎 Best Fitness</div>
+            <div class="stat-value">{{ result.best_fitness }}</div>
+          </div>
+          
+          <div class="stat-card">
+            <div class="stat-label">💰 Total Biaya</div>
+            <div class="stat-value">${{ "{:,.0f}".format(result.total_cost) }}</div>
+          </div>
+          
+          <div class="stat-card">
+            <div class="stat-label">📈 Total Manfaat</div>
+            <div class="stat-value">{{ result.total_benefit }}</div>
+          </div>
+          
+          <div class="stat-card">
+            <div class="stat-label">🎯 Budget</div>
+            <div class="stat-value">${{ "{:,.0f}".format(result.budget) }}</div>
+          </div>
+        </div>
+
+        <h3>💵 Penggunaan Budget</h3>
+        {% set percentage = (result.total_cost / result.budget * 100) %}
+        {% set bar_width = 100 if percentage > 100 else percentage %}
+        <div class="progress-bar">
+          <div class="progress-fill {% if result.total_cost > result.budget %}over-budget{% endif %}" 
+               style="width: {{ bar_width }}%">
+            {{ "%.1f"|format(percentage) }}%
+          </div>
+        </div>
+        
+        <p style="text-align: center; margin-top: 10px;">
+          <strong>Status Budget:</strong>
+          {% if result.total_cost <= result.budget %}
+            <span class="ok">Dalam Budget</span>
+          {% else %}
+            <span class="warn">Melebihi Budget</span>
+          {% endif %}
+        </p>
+      </div>
+
+      <div class="card">
+        <h2>🔧 Segmen Resurfacing Terpilih</h2>
+        {% if result.chosen_segments %}
+        <table>
+          <tr>
+            <th>ID Segmen</th>
+            <th>Start (m)</th>
+            <th>End (m)</th>
+            <th>Panjang (m)</th>
+            <th>Biaya (USD)</th>
+          </tr>
+          {% for s in result.chosen_segments %}
+          <tr>
+            <td><strong>{{ s['id'] }}</strong></td>
+            <td>{{ s['start_m'] }}</td>
+            <td>{{ s['end_m'] }}</td>
+            <td>{{ s['length'] }}</td>
+            <td>${{ "{:,.0f}".format(s['cost']) }}</td>
+          </tr>
+          {% endfor %}
+          <tr style="background: #f8f9ff; font-weight: 600;">
+            <td colspan="4" style="text-align: right;">TOTAL BIAYA RESURFACING:</td>
+            <td>${{ "{:,.0f}".format(result.chosen_segments|sum(attribute='cost')) }}</td>
+          </tr>
+        </table>
+        {% else %}
+        <div class="info-box">
+          <p>ℹ️ Tidak ada segmen resurfacing yang dipilih dalam solusi optimal ini.</p>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="card">
+        <h2>🚧 Detail Perbaikan Kerusakan</h2>
+        <table>
+          <tr>
+            <th>ID</th>
+            <th>Lokasi (m)</th>
+            <th>Deduction</th>
+            <th>Biaya Local</th>
+            <th>Status</th>
+            <th>Metode Perbaikan</th>
+          </tr>
+          {% for d in result.distress_status %}
+          <tr>
+            <td><strong>{{ d['id'] }}</strong></td>
+            <td>{{ d['location_m'] }}</td>
+            <td>{{ d['deduction'] }}</td>
+            <td>${{ "{:,.0f}".format(d['cost_local']) }}</td>
+            <td>
+              {% if d['repaired'] %}
+                <span class="ok">Diperbaiki</span>
+              {% else %}
+                <span class="warn">Tidak</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if d['method'] == 'Resurfacing' %}
+                🔧 {{ d['method'] }}
+              {% elif d['method'] == 'Local repair' %}
+                🛠️ {{ d['method'] }}
+              {% else %}
+                ❌ {{ d['method'] }}
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </table>
+
+        <div class="info-box" style="margin-top: 20px;">
+          <p><strong>💡 Penjelasan:</strong></p>
+          <p>• <strong>Manfaat Total:</strong> {{ result.total_benefit }} poin deduction yang berhasil diperbaiki</p>
+          <p>• <strong>Fitness:</strong> Nilai yang dimaksimalkan oleh algoritma GA (manfaat - penalti)</p>
+          <p>• <strong>Metode Perbaikan:</strong></p>
+          <p>&nbsp;&nbsp;- <strong>Resurfacing:</strong> Kerusakan tercakup dalam segmen resurfacing</p>
+          <p>&nbsp;&nbsp;- <strong>Local repair:</strong> Perbaikan individual pada titik kerusakan</p>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+  </form>
+
+  {% if error %}
+  <div class="alert-error">
+    <h2>❌ Terjadi Error</h2>
+    <p><strong>{{ error }}</strong></p>
+    <p style="margin-top: 10px;">Silakan periksa format input data Anda dan coba lagi.</p>
+  </div>
+  {% endif %}
+
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <p style="color: white; font-size: 1.2em;">⏳ Menjalankan Algoritma Genetika...</p>
+    <p style="color: white; opacity: 0.8;">Mohon tunggu, proses optimasi sedang berlangsung</p>
+  </div>
+
+</div>
+
+<script src="{{ url_for('static', filename='js/main.js', v=5) }}"></script>
+
+</body>
+</html>
