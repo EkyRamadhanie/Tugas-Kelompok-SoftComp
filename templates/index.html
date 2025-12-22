@@ -12,12 +12,12 @@
 <div class="container">
   <div class="header">
     <h1>🛣️ Road Maintenance Optimizer</h1>
-    <p>Genetic Algorithm untuk Optimasi Pemeliharaan Jalan</p>
+    <p>Genetic Algorithm untuk Optimasi Pemeliharaan Jalan - Himalayan Region</p>
   </div>
 
   <!-- Tabs -->
   <div class="tabs">
-    <button type="button" class="tab-button active" onclick="showTab('input')">📚 Data Jurnal</button>
+    <button type="button" class="tab-button active" onclick="showTab('input')">📚 Data Jalan</button>
     <button type="button" class="tab-button" onclick="showTab('parameters')">⚙️ Parameter Algoritma</button>
     {% if result %}
     <button type="button" class="tab-button" onclick="showTab('results')">🏆 Hasil Optimasi</button>
@@ -32,13 +32,13 @@
       <!-- DATA JURNAL INFO CARD -->
       <div class="card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);">
         <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px;">
-          <div style="font-size: 4em;">📚</div>
+          <div style="font-size: 4em;">🏔️</div>
           <div>
             <h2 style="margin: 0; color: white; font-size: 1.8em; text-shadow: 2px 2px 4px rgba(0,0,0,0.2);">
               Data Studi Kasus Jurnal
             </h2>
             <p style="margin: 10px 0 0 0; font-size: 1.1em; opacity: 0.95;">
-              <em>Applied Sciences 2025, Volume 15, Issue 10094</em>
+              <em>Nautiyal & Sharma (2022) - Himalayan Region</em>
             </p>
           </div>
         </div>
@@ -47,117 +47,127 @@
           <h3 style="color: white; margin-top: 0; font-size: 1.3em;">📊 Ringkasan Dataset</h3>
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 15px;">
             <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 8px;">
-              <div style="font-size: 0.9em; opacity: 0.9;">🚧 Total Kerusakan</div>
-              <div style="font-size: 2em; font-weight: 700; margin-top: 5px;">20</div>
-              <div style="font-size: 0.85em; opacity: 0.85; margin-top: 5px;">Dari Table 2</div>
+              <div style="font-size: 0.9em; opacity: 0.9;">🛣️ Total Jalan</div>
+              <div style="font-size: 2em; font-weight: 700; margin-top: 5px;">{{ roads|length }}</div>
+              <div style="font-size: 0.85em; opacity: 0.85; margin-top: 5px;">Kandidat perbaikan</div>
             </div>
             <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 8px;">
-              <div style="font-size: 0.9em; opacity: 0.9;">💰 Opsi Biaya</div>
-              <div style="font-size: 2em; font-weight: 700; margin-top: 5px;">16</div>
-              <div style="font-size: 0.85em; opacity: 0.85; margin-top: 5px;">Dari Table 4</div>
+              <div style="font-size: 0.9em; opacity: 0.9;">🔧 Teknik Maintenance</div>
+              <div style="font-size: 2em; font-weight: 700; margin-top: 5px;">6</div>
+              <div style="font-size: 0.85em; opacity: 0.85; margin-top: 5px;">OG, MS, RE, RM, SS, CF</div>
             </div>
             <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 8px;">
-              <div style="font-size: 0.9em; opacity: 0.9;">📏 Rentang Lokasi</div>
-              <div style="font-size: 2em; font-weight: 700; margin-top: 5px;">0-12 KM</div>
-              <div style="font-size: 0.85em; opacity: 0.85; margin-top: 5px;">12000 meter jalan</div>
+              <div style="font-size: 0.9em; opacity: 0.9;">💰 Total Budget</div>
+              <div style="font-size: 2em; font-weight: 700; margin-top: 5px;">₹{{ "{:,.0f}".format(total_budget) }}</div>
+              <div style="font-size: 0.85em; opacity: 0.85; margin-top: 5px;">100% scenario</div>
             </div>
           </div>
         </div>
 
         <div style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 8px;">
           <p style="margin: 0; font-size: 1.05em; line-height: 1.6;">
-            ✅ Dataset diambil dari jurnal tervalidasi<br>
-            ✅ GA akan otomatis memilih segmen optimal dari Table 4<br>
-            ✅ Hasil akan dibandingkan dengan Table 6 (hasil peneliti) 📊
+            ✅ Dataset dari jurnal low-volume rural roads<br>
+            ✅ GA akan memilih jalan mana yang diperbaiki dalam budget<br>
+            ✅ Optimasi: maksimalkan peningkatan PCR (Pavement Condition Rating) 📈
           </p>
         </div>
       </div>
 
-      <!-- TABEL DISTRESS -->
+      <!-- TABEL ROADS -->
       <div class="card">
-        <h2>🚧 Data Kerusakan Jalan (Distress) - Table 2</h2>
+        <h2>🛣️ Data Jalan - Kandidat Perbaikan</h2>
+        <p style="margin-bottom: 20px; color: #666;">
+          <strong>PCR (Pavement Condition Rating)</strong> menggunakan skala 0-3 dimana nilai lebih tinggi = kondisi lebih baik.
+        </p>
         <div style="overflow-x: auto;">
           <table style="width: 100%; border-collapse: collapse;">
             <thead>
               <tr style="background: #667eea; color: white;">
-                <th style="padding: 12px; text-align: left;">ID</th>
-                <th style="padding: 12px; text-align: left;">Lokasi (KM + m)</th>
-                <th style="padding: 12px; text-align: right;">Lokasi Total (m)</th>
-                <th style="padding: 12px; text-align: right;">Deduction</th>
-                <th style="padding: 12px; text-align: right;">Biaya Local (USD)</th>
+                <th style="padding: 12px; text-align: left;">Road ID</th>
+                <th style="padding: 12px; text-align: center;">Technique</th>
+                <th style="padding: 12px; text-align: center;">Present PCR</th>
+                <th style="padding: 12px; text-align: center;">New PCR</th>
+                <th style="padding: 12px; text-align: center;">Improvement</th>
+                <th style="padding: 12px; text-align: right;">Cost (₹)</th>
               </tr>
             </thead>
             <tbody>
-              <tr><td style="padding: 10px; border-bottom: 1px solid #eee;">D1</td><td style="padding: 10px; border-bottom: 1px solid #eee;">KM 3 + 772m</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">3,772</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">22.70</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$454</td></tr>
-              <tr><td style="padding: 10px; border-bottom: 1px solid #eee;">D2</td><td style="padding: 10px; border-bottom: 1px solid #eee;">KM 10 + 529m</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">10,529</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">10.50</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$210</td></tr>
-              <tr><td style="padding: 10px; border-bottom: 1px solid #eee;">D3</td><td style="padding: 10px; border-bottom: 1px solid #eee;">KM 9 + 728m</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">9,728</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">28.35</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$567</td></tr>
-              <tr><td style="padding: 10px; border-bottom: 1px solid #eee;">D4</td><td style="padding: 10px; border-bottom: 1px solid #eee;">KM 1 + 324m</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">1,324</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">9.30</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$186</td></tr>
-              <tr><td style="padding: 10px; border-bottom: 1px solid #eee;">D5</td><td style="padding: 10px; border-bottom: 1px solid #eee;">KM 7 + 212m</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">7,212</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">21.75</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$435</td></tr>
-              <tr><td style="padding: 10px; border-bottom: 1px solid #eee;">D6</td><td style="padding: 10px; border-bottom: 1px solid #eee;">KM 3 + 595m</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">3,595</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">8.15</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$163</td></tr>
-              <tr><td style="padding: 10px; border-bottom: 1px solid #eee;">D7</td><td style="padding: 10px; border-bottom: 1px solid #eee;">KM 7 + 595m</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">7,595</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">13.00</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$260</td></tr>
-              <tr><td style="padding: 10px; border-bottom: 1px solid #eee;">D8</td><td style="padding: 10px; border-bottom: 1px solid #eee;">KM 1 + 107m</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">1,107</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">29.45</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$589</td></tr>
-              <tr><td style="padding: 10px; border-bottom: 1px solid #eee;">D9</td><td style="padding: 10px; border-bottom: 1px solid #eee;">KM 10 + 692m</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">10,692</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">31.75</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$635</td></tr>
-              <tr><td style="padding: 10px; border-bottom: 1px solid #eee;">D10</td><td style="padding: 10px; border-bottom: 1px solid #eee;">KM 5 + 349m</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">5,349</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">18.30</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$366</td></tr>
-              <tr><td style="padding: 10px; border-bottom: 1px solid #eee;">D11</td><td style="padding: 10px; border-bottom: 1px solid #eee;">KM 11 + 516m</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">11,516</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">20.50</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$410</td></tr>
-              <tr><td style="padding: 10px; border-bottom: 1px solid #eee;">D12</td><td style="padding: 10px; border-bottom: 1px solid #eee;">KM 3 + 675m</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">3,675</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">19.25</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$385</td></tr>
-              <tr><td style="padding: 10px; border-bottom: 1px solid #eee;">D13</td><td style="padding: 10px; border-bottom: 1px solid #eee;">KM 2 + 648m</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">2,648</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">25.85</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$517</td></tr>
-              <tr><td style="padding: 10px; border-bottom: 1px solid #eee;">D14</td><td style="padding: 10px; border-bottom: 1px solid #eee;">KM 6 + 479m</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">6,479</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">10.50</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$210</td></tr>
-              <tr><td style="padding: 10px; border-bottom: 1px solid #eee;">D15</td><td style="padding: 10px; border-bottom: 1px solid #eee;">KM 8 + 295m</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">8,295</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">18.35</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$367</td></tr>
-              <tr><td style="padding: 10px; border-bottom: 1px solid #eee;">D16</td><td style="padding: 10px; border-bottom: 1px solid #eee;">KM 6 + 918m</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">6,918</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">9.95</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$199</td></tr>
-              <tr><td style="padding: 10px; border-bottom: 1px solid #eee;">D17</td><td style="padding: 10px; border-bottom: 1px solid #eee;">KM 11 + 183m</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">11,183</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">29.70</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$594</td></tr>
-              <tr><td style="padding: 10px; border-bottom: 1px solid #eee;">D18</td><td style="padding: 10px; border-bottom: 1px solid #eee;">KM 5 + 903m</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">5,903</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">21.80</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$436</td></tr>
-              <tr><td style="padding: 10px; border-bottom: 1px solid #eee;">D19</td><td style="padding: 10px; border-bottom: 1px solid #eee;">KM 9 + 296m</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">9,296</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">28.20</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$564</td></tr>
-              <tr><td style="padding: 10px; border-bottom: 1px solid #eee;">D20</td><td style="padding: 10px; border-bottom: 1px solid #eee;">KM 10 + 132m</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">10,132</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">10.00</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$200</td></tr>
+              {% for road in roads %}
+              <tr>
+                <td style="padding: 10px; border-bottom: 1px solid #eee; font-weight: 600;">{{ road.id }}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">
+                  <span style="background: #764ba2; color: white; padding: 4px 10px; border-radius: 12px; font-size: 0.85em; font-weight: 500;">
+                    {{ road.technique }}
+                  </span>
+                </td>
+                <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">{{ "%.2f"|format(road.present_pcr) }}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">{{ "%.2f"|format(road.new_pcr) }}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">
+                  {% set delta = road.new_pcr - road.present_pcr %}
+                  <span style="color: {% if delta > 0 %}#22c55e{% else %}#999{% endif %}; font-weight: 600;">
+                    {% if delta > 0 %}+{% endif %}{{ "%.2f"|format(delta) }}
+                  </span>
+                </td>
+                <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">₹{{ "{:,.0f}".format(road.cost) }}</td>
+              </tr>
+              {% endfor %}
             </tbody>
           </table>
         </div>
       </div>
 
-      <!-- TABEL BIAYA RESURFACING -->
+      <!-- TABEL TEKNIK -->
       <div class="card">
-        <h2>💰 Opsi Biaya Resurfacing - Table 4</h2>
-        <p style="margin-bottom: 20px; color: #666;">
-          GA akan memilih kombinasi panjang segmen dari tabel ini untuk menghasilkan solusi optimal.
-          Segmen bisa ditempatkan di berbagai posisi sepanjang jalan (0-12000 meter).
-        </p>
+        <h2>🔧 Penjelasan Teknik Maintenance</h2>
         <div style="overflow-x: auto;">
           <table style="width: 100%; border-collapse: collapse;">
             <thead>
               <tr style="background: #764ba2; color: white;">
-                <th style="padding: 12px; text-align: center;">Panjang Segmen (m)</th>
-                <th style="padding: 12px; text-align: center;">Biaya Resurfacing (USD)</th>
-                <th style="padding: 12px; text-align: center;">Biaya per Meter</th>
+                <th style="padding: 12px; text-align: center;">Code</th>
+                <th style="padding: 12px; text-align: left;">Technique</th>
+                <th style="padding: 12px; text-align: left;">Description</th>
               </tr>
             </thead>
             <tbody>
-              <tr><td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center; font-weight: 600;">5</td><td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">$6,400</td><td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center; color: #666;">$1,280/m</td></tr>
-              <tr><td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center; font-weight: 600;">10</td><td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">$7,700</td><td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center; color: #666;">$770/m</td></tr>
-              <tr><td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center; font-weight: 600;">15</td><td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">$9,033</td><td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center; color: #666;">$602/m</td></tr>
-              <tr><td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center; font-weight: 600;">20</td><td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">$10,267</td><td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center; color: #666;">$513/m</td></tr>
-              <tr><td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center; font-weight: 600;">25</td><td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">$11,333</td><td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center; color: #666;">$453/m</td></tr>
-              <tr><td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center; font-weight: 600;">30</td><td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">$12,567</td><td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center; color: #666;">$419/m</td></tr>
-              <tr><td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center; font-weight: 600;">35</td><td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">$15,733</td><td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center; color: #666;">$449/m</td></tr>
-              <tr><td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center; font-weight: 600;">40</td><td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">$17,000</td><td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center; color: #666;">$425/m</td></tr>
-              <tr><td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center; font-weight: 600;">45</td><td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">$18,233</td><td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center; color: #666;">$405/m</td></tr>
-              <tr><td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center; font-weight: 600;">50</td><td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">$19,467</td><td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center; color: #666;">$389/m</td></tr>
-              <tr style="background: #f0f7ff;"><td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center; font-weight: 600;">100</td><td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center; font-weight: 600;">$31,000</td><td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center; color: #4a6cf7; font-weight: 600;">$310/m ⭐</td></tr>
-              <tr style="background: #f0f7ff;"><td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center; font-weight: 600;">150</td><td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center; font-weight: 600;">$43,333</td><td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center; color: #4a6cf7; font-weight: 600;">$289/m ⭐</td></tr>
-              <tr><td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center; font-weight: 600;">200</td><td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">$56,000</td><td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center; color: #666;">$280/m</td></tr>
-              <tr><td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center; font-weight: 600;">250</td><td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">$68,000</td><td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center; color: #666;">$272/m</td></tr>
-              <tr><td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center; font-weight: 600;">300</td><td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">$80,333</td><td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center; color: #666;">$268/m</td></tr>
-              <tr style="background: #f0f7ff;"><td style="padding: 12px; text-align: center; font-weight: 600;">350</td><td style="padding: 12px; text-align: center; font-weight: 600;">$93,333</td><td style="padding: 12px; text-align: center; color: #4a6cf7; font-weight: 600;">$267/m ⭐</td></tr>
+              <tr>
+                <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center; font-weight: 600;">OG</td>
+                <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: 600;">Overlay</td>
+                <td style="padding: 12px; border-bottom: 1px solid #eee;">Penambahan lapisan aspal baru di atas permukaan existing</td>
+              </tr>
+              <tr>
+                <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center; font-weight: 600;">MS</td>
+                <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: 600;">Micro Surfacing</td>
+                <td style="padding: 12px; border-bottom: 1px solid #eee;">Treatment permukaan tipis untuk seal dan protect</td>
+              </tr>
+              <tr>
+                <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center; font-weight: 600;">RE</td>
+                <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: 600;">Rehabilitation</td>
+                <td style="padding: 12px; border-bottom: 1px solid #eee;">Perbaikan struktural menyeluruh untuk jalan rusak parah</td>
+              </tr>
+              <tr>
+                <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center; font-weight: 600;">RM</td>
+                <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: 600;">Routine Maintenance</td>
+                <td style="padding: 12px; border-bottom: 1px solid #eee;">Pemeliharaan rutin untuk jalan kondisi baik</td>
+              </tr>
+              <tr>
+                <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center; font-weight: 600;">SS</td>
+                <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: 600;">Surface Sealing</td>
+                <td style="padding: 12px; border-bottom: 1px solid #eee;">Seal coat untuk mencegah water infiltration</td>
+              </tr>
+              <tr>
+                <td style="padding: 12px; text-align: center; font-weight: 600;">CF</td>
+                <td style="padding: 12px; font-weight: 600;">Crack Filling</td>
+                <td style="padding: 12px;">Pengisian retak untuk mencegah kerusakan lebih lanjut</td>
+              </tr>
             </tbody>
           </table>
         </div>
         <div style="margin-top: 15px; padding: 15px; background: #f0f7ff; border-left: 4px solid #4a6cf7; border-radius: 4px;">
           <p style="margin: 0; color: #333;">
-            <strong>💡 Insight:</strong> Segmen yang lebih panjang umumnya lebih ekonomis per meter (economy of scale).
-            GA akan mencari kombinasi optimal antara efisiensi biaya dan coverage kerusakan.
+            <strong>💡 Note:</strong> GA akan memilih subset jalan yang akan diperbaiki untuk memaksimalkan total peningkatan PCR dalam batasan budget yang tersedia.
           </p>
         </div>
       </div>
-
-      <input type="hidden" name="use_journal" value="on">
 
     </div> <!-- END TAB INPUT -->
 
@@ -172,12 +182,12 @@
         <div class="form-grid">
           <div class="form-group">
             <label>
-              💰 Budget (USD)
-              <span class="param-hint">Anggaran maksimal untuk resurfacing</span>
+              💰 Budget Ratio
+              <span class="param-hint">Persentase dari total budget yang tersedia</span>
             </label>
-            <input type="number" name="budget" value="{{ params.budget if params else '150000' }}" min="50000" step="10000">
+            <input type="number" name="budget_ratio" value="{{ params.budget_ratio if params else '1.0' }}" min="0.1" max="1.0" step="0.1">
             <small style="color: #888; display: block; margin-top: 5px;">
-              📌 Optimal: $150,000 | Min: $50,000 | Semakin besar budget, semakin banyak kerusakan yang bisa diperbaiki
+              📌 Optimal: 1.0 (100%) | Rentang: 0.1-1.0 | Total budget: ₹{{ "{:,.0f}".format(total_budget) if total_budget else '869,613' }}
             </small>
           </div>
 
@@ -186,7 +196,7 @@
               👥 Ukuran Populasi
               <span class="param-hint">Jumlah solusi kandidat per generasi</span>
             </label>
-            <input type="number" name="pop_size" value="{{ params.pop_size if params else '50' }}" min="20" max="200" step="10">
+            <input type="number" name="population_size" value="{{ params.population_size if params else '50' }}" min="20" max="200" step="10">
             <small style="color: #888; display: block; margin-top: 5px;">
               📌 Optimal: 50 | Rentang: 20-200 | Lebih besar = hasil lebih baik tapi lebih lambat
             </small>
@@ -197,9 +207,9 @@
               🔄 Jumlah Generasi
               <span class="param-hint">Iterasi evolusi algoritma</span>
             </label>
-            <input type="number" name="generations" value="{{ params.generations if params else '50' }}" min="20" max="200" step="10">
+            <input type="number" name="generations" value="{{ params.generations if params else '200' }}" min="20" max="500" step="10">
             <small style="color: #888; display: block; margin-top: 5px;">
-              📌 Optimal: 50 | Rentang: 20-200 | Lebih banyak = konvergensi lebih baik tapi lebih lambat
+              📌 Optimal: 200 | Rentang: 20-500 | Lebih banyak = konvergensi lebih baik tapi lebih lambat
             </small>
           </div>
 
@@ -219,9 +229,9 @@
               🎲 Mutation Rate
               <span class="param-hint">Probabilitas mutasi gen (0-1)</span>
             </label>
-            <input type="number" name="mutation_rate" value="{{ params.mutation_rate if params else '0.15' }}" step="0.01" min="0.05" max="0.3">
+            <input type="number" name="mutation_rate" value="{{ params.mutation_rate if params else '0.02' }}" step="0.01" min="0.01" max="0.1">
             <small style="color: #888; display: block; margin-top: 5px;">
-              📌 Optimal: 0.15 | Rentang: 0.05-0.3 | Tinggi = variasi lebih besar, hindari local optimum
+              📌 Optimal: 0.02 | Rentang: 0.01-0.1 | Tinggi = variasi lebih besar, hindari local optimum
             </small>
           </div>
 
@@ -229,10 +239,10 @@
             <div style="background: #f0f7ff; padding: 15px; border-radius: 8px; border-left: 4px solid #4a6cf7;">
               <strong style="color: #333;">💡 Tips Optimasi:</strong>
               <ul style="margin: 10px 0 0 20px; color: #666;">
-                <li><strong>Hasil terbaik:</strong> Pop=50, Gen=50, Cross=0.8, Mut=0.15 (⏱️ ~5 detik)</li>
-                <li><strong>Cepat:</strong> Pop=30, Gen=30 (⏱️ ~2 detik, hasil cukup baik)</li>
-                <li><strong>Maksimal:</strong> Pop=100, Gen=100 (⏱️ ~20 detik, hasil optimal)</li>
-                <li><strong>Budget rendah:</strong> Naikkan mutation rate ke 0.2 untuk eksplorasi lebih luas</li>
+                <li><strong>Hasil terbaik:</strong> Pop=50, Gen=200, Cross=0.8, Mut=0.02 (⏱️ ~3 detik)</li>
+                <li><strong>Cepat:</strong> Pop=30, Gen=100 (⏱️ ~1 detik, hasil cukup baik)</li>
+                <li><strong>Maksimal:</strong> Pop=100, Gen=500 (⏱️ ~10 detik, hasil optimal)</li>
+                <li><strong>Budget rendah:</strong> Naikkan mutation rate ke 0.05 untuk eksplorasi lebih luas</li>
               </ul>
             </div>
           </div>
@@ -255,131 +265,121 @@
 
         <div class="summary-items">
           <div class="summary-item">
-            <div class="summary-item-label">Best Fitness</div>
-            <div class="summary-item-value">{{ result.best_fitness }}</div>
+            <div class="summary-item-label">Total PCR Improvement</div>
+            <div class="summary-item-value">+{{ "%.2f"|format(result.total_delta_pcr) }}</div>
+          </div>
+
+          <div class="summary-item">
+            <div class="summary-item-label">Present Avg PCR</div>
+            <div class="summary-item-value">{{ "%.2f"|format(result.present_avg_pcr) }}</div>
+          </div>
+
+          <div class="summary-item">
+            <div class="summary-item-label">New Avg PCR</div>
+            <div class="summary-item-value">{{ "%.2f"|format(result.new_avg_pcr) }}</div>
           </div>
 
           <div class="summary-item">
             <div class="summary-item-label">Total Biaya</div>
-            <div class="summary-item-value">${{ "{:,.0f}".format(result.total_cost) }}</div>
+            <div class="summary-item-value">₹{{ "{:,.0f}".format(result.total_cost) }}</div>
           </div>
 
           <div class="summary-item">
-            <div class="summary-item-label">Total Benefit</div>
-            <div class="summary-item-value">{{ result.total_benefit }}</div>
-          </div>
-
-          <div class="summary-item">
-            <div class="summary-item-label">Budget</div>
-            <div class="summary-item-value">${{ "{:,.0f}".format(result.budget) }}</div>
+            <div class="summary-item-label">Budget Limit</div>
+            <div class="summary-item-value">₹{{ "{:,.0f}".format(result.budget_limit) }}</div>
           </div>
 
           <div class="summary-item">
             <div class="summary-item-label">Budget Used</div>
             <div class="summary-item-value">
-              {% set used = (result.total_cost / result.budget * 100) | round(2) %}
+              {% set used = (result.total_cost / result.budget_limit * 100) | round(2) %}
               {{ used }}%
             </div>
           </div>
+
+          <div class="summary-item">
+            <div class="summary-item-label">PCR Improvement</div>
+            <div class="summary-item-value">
+              {{ "%.1f"|format(result.improvement_percent) }}%
+            </div>
+          </div>
+
+          <div class="summary-item">
+            <div class="summary-item-label">Roads Selected</div>
+            <div class="summary-item-value">{{ result.selected|length }}/{{ roads|length }}</div>
+          </div>
         </div>
       </div>
 
-      <!-- METHOD BREAKDOWN -->
+      <!-- SELECTED ROADS TABLE -->
       <div class="card">
-        <h2>🔧 Breakdown Metode Perbaikan</h2>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 20px;">
-          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 12px; text-align: center;">
-            <div style="font-size: 2.5em; font-weight: bold;">{{ result.resurfacing_count }}</div>
-            <div style="font-size: 1.1em; opacity: 0.9;">Resurfacing</div>
-            <div style="font-size: 0.9em; opacity: 0.8; margin-top: 5px;">${{ "{:,.0f}".format(result.resurfacing_cost) }}</div>
-          </div>
-          <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 20px; border-radius: 12px; text-align: center;">
-            <div style="font-size: 2.5em; font-weight: bold;">{{ result.local_repair_count }}</div>
-            <div style="font-size: 1.1em; opacity: 0.9;">Local Repair</div>
-            <div style="font-size: 0.9em; opacity: 0.8; margin-top: 5px;">${{ "{:,.0f}".format(result.local_repair_cost) }}</div>
-          </div>
-          <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; padding: 20px; border-radius: 12px; text-align: center;">
-            <div style="font-size: 2.5em; font-weight: bold;">20</div>
-            <div style="font-size: 1.1em; opacity: 0.9;">Total Diperbaiki</div>
-            <div style="font-size: 0.9em; opacity: 0.8; margin-top: 5px;">100% Coverage</div>
-          </div>
-        </div>
-        <div style="background: #f0f7ff; padding: 15px; border-radius: 8px; border-left: 4px solid #4a6cf7;">
-          <p style="margin: 0; color: #333;">
-            <strong>💡 Strategi GA:</strong> Algoritma memilih resurfacing untuk area dengan banyak kerusakan berdekatan (lebih ekonomis), 
-            dan local repair untuk kerusakan individual yang tersebar (lebih efisien untuk kasus spesifik).
-          </p>
-        </div>
-      </div>
-
-      <!-- SEGMENTS TABLE -->
-      <div class="card">
-        <h2>🔧 Segmen Terpilih</h2>
-        {% if result.chosen_segments %}
+        <h2>✅ Jalan Terpilih untuk Diperbaiki</h2>
+        {% if result.selected %}
         <table>
           <tr>
-            <th>ID</th>
-            <th>Start</th>
-            <th>End</th>
-            <th>Panjang</th>
-            <th>Biaya</th>
-            <th>% Panjang (asumsi 10 km)</th>
+            <th>Road ID</th>
+            <th>Technique</th>
+            <th>Present PCR</th>
+            <th>New PCR</th>
+            <th>Improvement</th>
+            <th>Cost (₹)</th>
           </tr>
-          {% for s in result.chosen_segments %}
+          {% for road in result.selected %}
           <tr>
-            <td>{{ s.id }}</td>
-            <td>{{ s.start_m }}</td>
-            <td>{{ s.end_m }}</td>
-            <td>{{ s.length }} m</td>
-            <td>${{ "{:,.0f}".format(s.cost) }}</td>
+            <td><strong>{{ road.id }}</strong></td>
             <td>
-              {% set pct = (s.length / 10000 * 100) | round(2) %}
-              {{ pct }}%
+              <span style="background: #764ba2; color: white; padding: 4px 10px; border-radius: 12px; font-size: 0.85em; font-weight: 500;">
+                {{ road.technique }}
+              </span>
             </td>
+            <td style="text-align: center;">{{ "%.2f"|format(road.present_pcr) }}</td>
+            <td style="text-align: center;">{{ "%.2f"|format(road.new_pcr) }}</td>
+            <td style="text-align: center;">
+              <span style="color: #22c55e; font-weight: 600;">+{{ "%.2f"|format(road.delta_pcr) }}</span>
+            </td>
+            <td style="text-align: right;">₹{{ "{:,.0f}".format(road.cost) }}</td>
           </tr>
           {% endfor %}
+          <tr style="background: #f0f7ff; font-weight: 600;">
+            <td colspan="4" style="text-align: right; padding: 12px;"><strong>TOTAL:</strong></td>
+            <td style="text-align: center; color: #22c55e;">+{{ "%.2f"|format(result.total_delta_pcr) }}</td>
+            <td style="text-align: right;">₹{{ "{:,.0f}".format(result.total_cost) }}</td>
+          </tr>
         </table>
         {% else %}
-        <p>Tidak ada segmen yang dipilih.</p>
+        <p>Tidak ada jalan yang dipilih (mungkin budget terlalu kecil).</p>
         {% endif %}
       </div>
 
-      <!-- DISTRESS STATUS TABLE -->
+      <!-- ALL ROADS STATUS TABLE -->
       <div class="card">
-        <h2>🚧 Status Kerusakan & Metode Perbaikan</h2>
+        <h2>📋 Status Semua Jalan</h2>
         <table>
           <tr>
-            <th>ID</th>
-            <th>Lokasi (m)</th>
-            <th>Deduction</th>
-            <th>Biaya Local</th>
+            <th>Road ID</th>
+            <th>Technique</th>
+            <th>Present PCR</th>
+            <th>New PCR</th>
+            <th>Cost (₹)</th>
             <th>Status</th>
-            <th>Metode</th>
           </tr>
-          {% for d in result.distress_status %}
-          <tr>
-            <td><strong>{{ d.id }}</strong></td>
-            <td>{{ d.location_m }}</td>
-            <td>{{ d.deduction }}</td>
-            <td>${{ "{:,.0f}".format(d.cost_local) }}</td>
+          {% set selected_ids = result.selected|map(attribute='id')|list %}
+          {% for road in roads %}
+          <tr{% if road.id in selected_ids %} style="background: #f0fff4;"{% endif %}>
+            <td><strong>{{ road.id }}</strong></td>
             <td>
-              {% if d.repaired %}
-                <span style="color: #22c55e; font-weight: bold;">✔ Repaired</span>
-              {% else %}
-                <span style="color: #ef4444; font-weight: bold;">✘ Not Fixed</span>
-              {% endif %}
+              <span style="background: {% if road.id in selected_ids %}#22c55e{% else %}#999{% endif %}; color: white; padding: 4px 10px; border-radius: 12px; font-size: 0.85em; font-weight: 500;">
+                {{ road.technique }}
+              </span>
             </td>
-            <td>
-              {% if d.method == "Resurfacing" %}
-                <span style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.9em; font-weight: 500;">
-                  🛣️ Resurfacing
-                </span>
-              {% elif d.method == "Local Repair" %}
-                <span style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.9em; font-weight: 500;">
-                  🔧 Local Repair
-                </span>
+            <td style="text-align: center;">{{ "%.2f"|format(road.present_pcr) }}</td>
+            <td style="text-align: center;">{{ "%.2f"|format(road.new_pcr) }}</td>
+            <td style="text-align: right;">₹{{ "{:,.0f}".format(road.cost) }}</td>
+            <td style="text-align: center;">
+              {% if road.id in selected_ids %}
+                <span style="color: #22c55e; font-weight: bold;">✔ Selected</span>
               {% else %}
-                <span style="color: #999;">-</span>
+                <span style="color: #ef4444; font-weight: bold;">✘ Not Selected</span>
               {% endif %}
             </td>
           </tr>
@@ -393,6 +393,6 @@
   </form>
 </div>
 
-<script src="{{ url_for('static', filename='js/main.js', v=11) }}"></script>
+<script src="{{ url_for('static', filename='js/main.js', v=12) }}"></script>
 </body>
 </html>

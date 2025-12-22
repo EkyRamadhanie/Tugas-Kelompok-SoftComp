@@ -1,84 +1,94 @@
-from flask import Flask, render_template, request
-from modules.data_parser import DataParser
-from modules.genetic_algorithm import GeneticAlgorithm
+# app.py
 
-# === IMPORT DATA JURNAL ===
-from modules.journal_data import get_journal_distresses, get_journal_segments
+from flask import Flask, render_template, request
+
+from modules.journal_data import get_journal_roads
+from modules.genetic_algorithm import GeneticAlgorithm
 
 app = Flask(__name__)
 
+
 @app.route("/", methods=["GET"])
 def index():
+    """
+    Halaman awal: tampilkan form sederhana (budget %, parameter GA).
+    """
+    roads = get_journal_roads()
+    total_budget = sum(r.cost for r in roads)
+    
     return render_template(
         "index.html",
-        sample_distress="id,location_m,deduction,cost_local\nD1,100,20,400",
-        sample_segment="id,start_m,end_m,cost_resurfacing\nS1,0,300,9000",
+        roads=roads,
+        total_budget=total_budget,
         result=None,
-        params=None,
-        error=None
+        params={
+            "budget_ratio": 1.0,
+            "population_size": 50,
+            "generations": 200,
+            "crossover_rate": 0.8,
+            "mutation_rate": 0.02,
+        },
+        error=None,
     )
 
 
 @app.route("/run", methods=["POST"])
 def run():
     try:
-        # Selalu pakai data jurnal
-        distresses = get_journal_distresses()
-        segments = get_journal_segments()
+        # ambil parameter dari form (kalau field tidak ada, pakai default)
+        budget_ratio = float(request.form.get("budget_ratio", "1.0"))
+        population_size = int(request.form.get("population_size", "50"))
+        generations = int(request.form.get("generations", "200"))
+        crossover_rate = float(request.form.get("crossover_rate", "0.8"))
+        mutation_rate = float(request.form.get("mutation_rate", "0.02"))
 
-        # ===================================================================================
-        # PARAMETER GA
-        # ===================================================================================
-
-        params = {
-            "budget": request.form.get("budget"),
-            "pop_size": request.form.get("pop_size"),
-            "generations": request.form.get("generations"),
-            "crossover_rate": request.form.get("crossover_rate"),
-            "mutation_rate": request.form.get("mutation_rate"),
-            "use_journal": True,
-        }
-
-        # Lambda parameters tidak digunakan lagi, set default
-        lambda_budget = 0.5
-        lambda_overlap = 1000
+        roads = get_journal_roads()
+        total_budget = sum(r.cost for r in roads)
 
         ga = GeneticAlgorithm(
-            segments=segments,
-            distresses=distresses,
-            budget=float(params["budget"]),
-            pop_size=int(params["pop_size"]),
-            generations=int(params["generations"]),
-            crossover_rate=float(params["crossover_rate"]),
-            mutation_rate=float(params["mutation_rate"]),
-            lambda_budget=lambda_budget,
-            lambda_overlap=lambda_overlap,
+            roads=roads,
+            budget_ratio=budget_ratio,
+            population_size=population_size,
+            generations=generations,
+            crossover_rate=crossover_rate,
+            mutation_rate=mutation_rate,
         )
 
         result = ga.run()
+        result_dict = GeneticAlgorithm.result_to_dict(result)
         
-        print(f"GA COMPLETED: {len(result['chosen_segments'])} segments, fitness={result['best_fitness']}")
+        # Debug: Print result
+        print("\n=== GA RESULT ===")
+        print(f"Total Delta PCR: {result_dict.get('total_delta_pcr', 'N/A')}")
+        print(f"Selected Roads: {len(result_dict.get('selected', []))}")
+        print(f"Budget Used: {result_dict.get('total_cost', 0):.0f} / {result_dict.get('budget_limit', 0):.0f}")
+        print("=================\n")
 
         return render_template(
             "index.html",
-            sample_distress="",
-            sample_segment="",
-            result=result,
-            params=params,
-            error=None
+            roads=roads,
+            total_budget=total_budget,
+            result=result_dict,
+            params={
+                "budget_ratio": budget_ratio,
+                "population_size": population_size,
+                "generations": generations,
+                "crossover_rate": crossover_rate,
+                "mutation_rate": mutation_rate,
+            },
+            error=None,
         )
 
     except Exception as e:
-        print(f"ERROR in /run: {e}")
-        import traceback
-        traceback.print_exc()
+        roads = get_journal_roads()
+        total_budget = sum(r.cost for r in roads)
         return render_template(
             "index.html",
-            sample_distress="",
-            sample_segment="",
+            roads=roads,
+            total_budget=total_budget,
             result=None,
             params=None,
-            error=str(e)
+            error=str(e),
         )
 
 

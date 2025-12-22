@@ -1,411 +1,194 @@
+# modules/genetic_algorithm.py
+
+from __future__ import annotations
+
 import random
-import time
-import copy
+from dataclasses import dataclass
+from typing import List, Dict, Any, Tuple
+
+from .journal_data import Road
+
+
+@dataclass
+class GAResult:
+    best_chromosome: List[int]
+    selected_roads: List[Road]
+    total_cost: float
+    budget_limit: float
+    present_avg_pcr: float
+    new_avg_pcr: float
+    total_delta_pcr: float
+    generations: int
+    history: List[float]
 
 
 class GeneticAlgorithm:
+    """
+    GA knapsack sederhana untuk memilih jalan yang akan diperbaiki.
+
+    - Chromosome: list 0/1, panjang = jumlah jalan.
+      1 = jalan diperbaiki, 0 = tidak.
+    - Objective: memaksimalkan total kenaikan PCR jaringan
+      dengan batasan total biaya <= budget_limit.
+    """
 
     def __init__(
         self,
-        segments,
-        distresses,
-        budget,
-        pop_size,
-        generations,
-        crossover_rate,
-        mutation_rate,
-        lambda_budget,
-        lambda_overlap
-    ):
-        # === RESET RANDOM SETIAP RUN ===
-        random.seed(time.time())
+        roads: List[Road],
+        budget_ratio: float = 1.0,        # 1.0 = 100% budget jurnal
+        population_size: int = 50,
+        generations: int = 200,
+        crossover_rate: float = 0.8,
+        mutation_rate: float = 0.02,
+        elite_fraction: float = 0.1,
+    ) -> None:
+        self.roads = roads
+        self.n = len(roads)
 
-        # === SIMPAN DATA ===
-        self.segments = segments
-        self.distresses = distresses
-        self.budget = budget
+        self.total_required_budget = sum(r.cost for r in roads)
+        self.budget_limit = self.total_required_budget * budget_ratio
 
-        self.pop_size = pop_size
+        self.population_size = population_size
         self.generations = generations
         self.crossover_rate = crossover_rate
         self.mutation_rate = mutation_rate
-        self.lambda_budget = lambda_budget
-        self.lambda_overlap = lambda_overlap
+        self.elite_size = max(1, int(elite_fraction * population_size))
 
-        # === RESET STATE GA ===
-        self.population = []
-        self.best_solution = None
-        self.best_fitness = float("-inf")
-        
-        # === CACHE untuk speed up ===
-        self._fitness_cache = {}
+        self.present_avg_pcr = sum(r.present_pcr for r in roads) / self.n
 
-        # === INISIALISASI POPULASI ===
-        self._init_population()
+    # ========================= GA CORE =========================
 
-    # ----------------------------------------------------------------------
-    # INISIALISASI POPULASI
-    # ----------------------------------------------------------------------
-    def _init_population(self):
-        self.population = []
-        chromosome_length = len(self.segments)
+    def _random_chromosome(self) -> List[int]:
+        # mulai dari solusi yang relatif hemat (lebih banyak 0)
+        return [1 if random.random() < 0.3 else 0 for _ in range(self.n)]
 
-        # Generate random population dengan density rendah
-        for _ in range(self.pop_size):
-            chrom = []
-            for _ in range(chromosome_length):
-                # 5% chance gene = 1
-                if random.random() < 0.05:
-                    chrom.append(1)
-                else:
-                    chrom.append(0)
-            
-            self.population.append(chrom)
+    def _decode(self, chromosome: List[int]) -> Tuple[float, float]:
+        """
+        Mengembalikan (total_cost, total_delta_pcr)
+        """
+        total_cost = 0.0
+        total_delta = 0.0
 
-    # ----------------------------------------------------------------------
-    # HITUNG TOTAL BIAYA CHROMOSOME (RESURFACING + LOCAL REPAIR)
-    # ----------------------------------------------------------------------
-    def _compute_total_cost(self, chrom):
-        total = 0
-        
-        # 1. Biaya resurfacing
-        repaired_by_resurfacing = set()
-        for gene, seg in zip(chrom, self.segments):
-            if gene == 1:
-                total += seg["cost"]
-                # Track distress yang di-cover resurfacing
-                for d in self.distresses:
-                    if seg["start_m"] <= d["location_m"] <= seg["end_m"]:
-                        repaired_by_resurfacing.add(d["id"])
-        
-        # 2. Biaya local repair untuk yang tidak di-cover resurfacing
-        for d in self.distresses:
-            if d["id"] not in repaired_by_resurfacing:
-                total += d["cost_local"]
-        
-        return total
+        for bit, road in zip(chromosome, self.roads):
+            if bit:
+                total_cost += road.cost
+                delta = max(0.0, road.new_pcr - road.present_pcr)
+                total_delta += delta
 
-    # ----------------------------------------------------------------------
-    # HITUNG MANFAAT (TOTAL DEDUCTION REPAIRED)
-    # ----------------------------------------------------------------------
-    def _compute_benefit(self, chrom):
+        return total_cost, total_delta
 
-        repaired_by_resurfacing = set()
+    def _fitness(self, chromosome: List[int]) -> float:
+        total_cost, total_delta = self._decode(chromosome)
 
-        # 1. Resurfacing coverage
-        for gene, seg in zip(chrom, self.segments):
-            if gene == 1:  # segmen terpilih
-                for d in self.distresses:
-                    if seg["start_m"] <= d["location_m"] <= seg["end_m"]:
-                        repaired_by_resurfacing.add(d["id"])
+        if total_cost > self.budget_limit:
+            # solusi over-budget dianggap sangat jelek
+            return -1e9 - (total_cost - self.budget_limit)
 
-        # 2. Hitung benefit dari resurfacing + local repair
-        total_benefit = 0
-        for d in self.distresses:
-            # Semua distress diperbaiki (resurfacing atau local repair)
-            total_benefit += d["deduction"]
+        # semakin besar total_delta semakin baik
+        return total_delta
 
-        return total_benefit
+    def _tournament_select(self, population: List[List[int]], k: int = 3) -> List[int]:
+        candidates = random.sample(population, k)
+        candidates.sort(key=self._fitness, reverse=True)
+        return candidates[0][:]
 
-    # ----------------------------------------------------------------------
-    # HITUNG PENALTI OVERLAP
-    # ----------------------------------------------------------------------
-    def _compute_overlap_penalty(self, chrom):
-        penalty = 0
-        chosen_segments = [
-            seg for gene, seg in zip(chrom, self.segments) if gene == 1
-        ]
+    def _crossover(self, p1: List[int], p2: List[int]) -> Tuple[List[int], List[int]]:
+        if random.random() > self.crossover_rate or self.n < 2:
+            return p1[:], p2[:]
 
-        # Bandingkan semua pasangan segmen
-        for i in range(len(chosen_segments)):
-            for j in range(i + 1, len(chosen_segments)):
-                s1 = chosen_segments[i]
-                s2 = chosen_segments[j]
-
-                if not (s1["end_m"] < s2["start_m"] or s2["end_m"] < s1["start_m"]):
-                    penalty += self.lambda_overlap
-
-        return penalty
-
-    # ----------------------------------------------------------------------
-    # HITUNG FITNESS
-    # ----------------------------------------------------------------------
-    def _fitness(self, chrom):
-        # Check cache first
-        chrom_tuple = tuple(chrom)
-        if chrom_tuple in self._fitness_cache:
-            return self._fitness_cache[chrom_tuple]
-        
-        cost = self._compute_total_cost(chrom)
-        benefit = self._compute_benefit(chrom)
-
-        # Cek overlap dulu - invalid solution
-        overlap_penalty = self._compute_overlap_penalty(chrom)
-        if overlap_penalty > 0:
-            self._fitness_cache[chrom_tuple] = 0
-            return 0
-
-        # Over budget = invalid solution
-        if cost > self.budget:
-            self._fitness_cache[chrom_tuple] = 0
-            return 0
-        
-        # Hitung jumlah distress yang diperbaiki via resurfacing
-        repaired_by_resurfacing = 0
-        for d in self.distresses:
-            for gene, seg in zip(chrom, self.segments):
-                if gene == 1 and seg["start_m"] <= d["location_m"] <= seg["end_m"]:
-                    repaired_by_resurfacing += 1
-                    break
-        
-        # Semua distress diperbaiki (resurfacing + local repair)
-        total_repaired = len(self.distresses)
-        
-        # Fitness components:
-        # 1. Benefit (total deduction) - semua diperbaiki, jadi benefit maksimal
-        # 2. Minimize cost - lebih sedikit biaya lebih bagus
-        # 3. Prefer resurfacing jika ekonomis (bonus untuk resurfacing)
-        
-        # Fitness = benefit - (cost penalty) + (resurfacing bonus)
-        cost_penalty = cost / 1000  # Normalize cost
-        resurfacing_bonus = repaired_by_resurfacing * 20  # Bonus untuk setiap resurfacing
-        
-        fitness = (benefit * 10) - cost_penalty + resurfacing_bonus
-
-        # Cache result
-        self._fitness_cache[chrom_tuple] = fitness
-        return fitness
-
-    # ----------------------------------------------------------------------
-    # SELECTION (TOURNAMENT)
-    # ----------------------------------------------------------------------
-    def _select_parent(self):
-        k = 3  # tournament size
-        best = None
-        best_fit = float("-inf")
-
-        for _ in range(k):
-            chrom = random.choice(self.population)
-            fit = self._fitness(chrom)
-            if fit > best_fit:
-                best_fit = fit
-                best = chrom
-
-        return copy.deepcopy(best)
-
-    # ----------------------------------------------------------------------
-    # CROSSOVER (SINGLE POINT)
-    # ----------------------------------------------------------------------
-    def _crossover(self, p1, p2):
-        if random.random() > self.crossover_rate:
-            return copy.deepcopy(p1), copy.deepcopy(p2)
-
-        point = random.randint(1, len(p1) - 1)
-
+        point = random.randint(1, self.n - 1)
         c1 = p1[:point] + p2[point:]
         c2 = p2[:point] + p1[point:]
-
         return c1, c2
 
-    # ----------------------------------------------------------------------
-    # MUTATION
-    # ----------------------------------------------------------------------
-    def _mutate(self, chrom):
-        # Standard bit-flip mutation
-        for i in range(len(chrom)):
+    def _mutate(self, chrom: List[int]) -> None:
+        for i in range(self.n):
             if random.random() < self.mutation_rate:
                 chrom[i] = 1 - chrom[i]
-        
-        return chrom
-    
-    # ----------------------------------------------------------------------
-    # REPAIR: Perbaiki solusi yang over budget dan overlap
-    # ----------------------------------------------------------------------
-    def _repair(self, chrom):
-        """Hapus segmen dengan efisiensi terendah sampai tidak over budget dan no overlap"""
-        
-        # Step 1: Fix overlaps first
-        max_iter_overlap = 50
-        for _ in range(max_iter_overlap):
-            overlap_penalty = self._compute_overlap_penalty(chrom)
-            if overlap_penalty == 0:
-                break
-            
-            # Find overlapping segments
-            chosen_segs_idx = [i for i, g in enumerate(chrom) if g == 1]
-            found_overlap = False
-            
-            for i in chosen_segs_idx:
-                if found_overlap:
-                    break
-                for j in chosen_segs_idx:
-                    if i >= j:
-                        continue
-                    s1 = self.segments[i]
-                    s2 = self.segments[j]
-                    
-                    # Check overlap
-                    if not (s1["end_m"] <= s2["start_m"] or s2["end_m"] <= s1["start_m"]):
-                        # Remove the more expensive one
-                        if s1["cost"] > s2["cost"]:
-                            chrom[i] = 0
-                        else:
-                            chrom[j] = 0
-                        found_overlap = True
-                        break
-        
-        # Step 2: Fix budget
-        cost = self._compute_total_cost(chrom)
-        if cost <= self.budget:
-            return chrom
-        
-        # Build list of active segments dengan efisiensi
-        active_segments = []
-        for i, (gene, seg) in enumerate(zip(chrom, self.segments)):
-            if gene == 1:
-                # Hitung efisiensi
-                covered_deduction = 0
-                for d in self.distresses:
-                    if seg["start_m"] <= d["location_m"] <= seg["end_m"]:
-                        covered_deduction += d["deduction"]
-                
-                efficiency = covered_deduction / seg["cost"] if seg["cost"] > 0 else 0
-                active_segments.append((i, efficiency, seg["cost"]))
-        
-        # Sort by efficiency ascending (worst first)
-        active_segments.sort(key=lambda x: x[1])
-        
-        # Hapus segmen dengan efisiensi terendah sampai budget OK
-        for idx, eff, seg_cost in active_segments:
-            chrom[idx] = 0
-            cost -= seg_cost
-            if cost <= self.budget:
-                break
-        
-        return chrom
 
-    # ----------------------------------------------------------------------
-    # EVALUATE BEST SOLUTION
-    # ----------------------------------------------------------------------
-    def _update_best(self):
-        for chrom in self.population:
-            fit = self._fitness(chrom)
-            if fit > self.best_fitness:
-                self.best_fitness = fit
-                self.best_solution = copy.deepcopy(chrom)
+    # ========================= PUBLIC API ======================
 
-    # ----------------------------------------------------------------------
-    # RUN GA
-    # ----------------------------------------------------------------------
-    def run(self):
+    def run(self, seed: int | None = None) -> GAResult:
+        if seed is not None:
+            random.seed(seed)
 
-        # RESET STATE SETIAP RUN
-        random.seed(time.time())
-        self.best_fitness = float("-inf")
-        self.best_solution = None
-        self._init_population()
+        # inisialisasi populasi
+        population = [self._random_chromosome() for _ in range(self.population_size)]
 
-        # LOOP GENERATION
-        for _ in range(self.generations):
-            new_population = []
+        history: List[float] = []
+        best = max(population, key=self._fitness)
+        best_fit = self._fitness(best)
 
-            # Buat populasi baru
-            while len(new_population) < self.pop_size:
-                p1 = self._select_parent()
-                p2 = self._select_parent()
+        for gen in range(self.generations):
+            # elitism: simpan beberapa individu terbaik
+            population.sort(key=self._fitness, reverse=True)
+            new_pop = population[: self.elite_size]
 
+            # generate offspring
+            while len(new_pop) < self.population_size:
+                p1 = self._tournament_select(population)
+                p2 = self._tournament_select(population)
                 c1, c2 = self._crossover(p1, p2)
+                self._mutate(c1)
+                self._mutate(c2)
+                new_pop.append(c1)
+                if len(new_pop) < self.population_size:
+                    new_pop.append(c2)
 
-                c1 = self._mutate(c1)
-                c2 = self._mutate(c2)
-                
-                # REPAIR: perbaiki solusi yang over budget
-                c1 = self._repair(c1)
-                c2 = self._repair(c2)
+            population = new_pop
 
-                new_population.append(c1)
-                if len(new_population) < self.pop_size:
-                    new_population.append(c2)
+            # update best
+            current_best = max(population, key=self._fitness)
+            current_fit = self._fitness(current_best)
+            if current_fit > best_fit:
+                best_fit = current_fit
+                best = current_best[:]
 
-            self.population = new_population
-            self._update_best()
+            history.append(best_fit)
 
-        # KEMBALIKAN RESULT
-        return self._build_result()
+        # decode solusi terbaik
+        total_cost, total_delta = self._decode(best)
+        selected_roads = [r for bit, r in zip(best, self.roads) if bit]
 
-    # ----------------------------------------------------------------------
-    # BANGUN OUTPUT UNTUK UI
-    # ----------------------------------------------------------------------
-    def _build_result(self):
+        new_avg_pcr = self.present_avg_pcr + (total_delta / self.n)
 
-        chosen_segments = []
-        total_cost = 0
+        return GAResult(
+            best_chromosome=best,
+            selected_roads=selected_roads,
+            total_cost=total_cost,
+            budget_limit=self.budget_limit,
+            present_avg_pcr=self.present_avg_pcr,
+            new_avg_pcr=new_avg_pcr,
+            total_delta_pcr=total_delta,
+            generations=self.generations,
+            history=history,
+        )
 
-        for gene, seg in zip(self.best_solution, self.segments):
-            if gene == 1:
-                chosen_segments.append({
-                    "id": seg["id"],
-                    "start_m": seg["start_m"],
-                    "end_m": seg["end_m"],
-                    "length": seg["length"],
-                    "cost": seg["cost"]
-                })
-                total_cost += seg["cost"]
-
-        # Status distress dengan metode repair
-        distress_status = []
-        resurfacing_cost_total = 0
-        local_repair_cost_total = 0
-        
-        for d in self.distresses:
-            repaired = False
-            method = "None"
-            cost_used = 0
-
-            # Cek apakah termasuk resurfacing
-            for gene, seg in zip(self.best_solution, self.segments):
-                if gene == 1 and seg["start_m"] <= d["location_m"] <= seg["end_m"]:
-                    repaired = True
-                    method = "Resurfacing"
-                    # Cost untuk resurfacing sudah di-track di chosen_segments
-                    cost_used = seg["cost"]  # Ini share cost dengan distress lain di segmen yang sama
-                    resurfacing_cost_total += d["cost_local"]  # Track biaya local yang disave
-                    break
-
-            # Kalau tidak masuk resurfacing → pakai local repair
-            if not repaired:
-                repaired = True
-                method = "Local Repair"
-                cost_used = d["cost_local"]
-                local_repair_cost_total += d["cost_local"]
-
-            distress_status.append({
-                "id": d["id"],
-                "location_m": d["location_m"],
-                "deduction": d["deduction"],
-                "cost_local": d["cost_local"],
-                "repaired": repaired,
-                "method": method,
-                "cost_used": cost_used
-            })
-
-        # Hitung total cost termasuk local repair
-        total_cost_with_local = total_cost + local_repair_cost_total
-        
-        # Count metode
-        resurfacing_count = sum(1 for d in distress_status if d["method"] == "Resurfacing")
-        local_repair_count = sum(1 for d in distress_status if d["method"] == "Local Repair")
-        
+    # helper untuk ditampilkan di template / CLI
+    @staticmethod
+    def result_to_dict(result: GAResult) -> Dict[str, Any]:
         return {
-            "best_fitness": round(self.best_fitness, 3),
-            "best_solution": self.best_solution,
-            "chosen_segments": chosen_segments,
-            "total_cost": total_cost_with_local,
-            "resurfacing_cost": total_cost,
-            "local_repair_cost": local_repair_cost_total,
-            "budget": self.budget,
-            "total_benefit": self._compute_benefit(self.best_solution),
-            "distress_status": distress_status,
-            "resurfacing_count": resurfacing_count,
-            "local_repair_count": local_repair_count
+            "budget_limit": result.budget_limit,
+            "total_cost": result.total_cost,
+            "present_avg_pcr": result.present_avg_pcr,
+            "new_avg_pcr": result.new_avg_pcr,
+            "total_delta_pcr": result.total_delta_pcr,
+            "improvement_percent": (
+                (result.new_avg_pcr - result.present_avg_pcr)
+                / result.present_avg_pcr
+                * 100.0
+                if result.present_avg_pcr > 0
+                else 0.0
+            ),
+            "selected": [
+                {
+                    "id": r.id,
+                    "technique": r.technique,
+                    "present_pcr": r.present_pcr,
+                    "new_pcr": r.new_pcr,
+                    "delta_pcr": max(0.0, r.new_pcr - r.present_pcr),
+                    "cost": r.cost,
+                }
+                for r in result.selected_roads
+            ],
         }

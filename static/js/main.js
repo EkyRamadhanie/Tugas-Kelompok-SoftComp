@@ -19,7 +19,7 @@ function showTab(tabName) {
   // Activate correct button
   const buttons = document.querySelectorAll('.tab-button');
   buttons.forEach(btn => {
-    if ((tabName === 'input' && btn.textContent.includes('Data Jurnal')) ||
+    if ((tabName === 'input' && (btn.textContent.includes('Data Jalan') || btn.textContent.includes('Data Jurnal'))) ||
         (tabName === 'parameters' && btn.textContent.includes('Parameter')) ||
         (tabName === 'results' && btn.textContent.includes('Hasil'))) {
       btn.classList.add('active');
